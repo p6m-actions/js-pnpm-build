@@ -1,0 +1,73 @@
+name: "JavaScript PNPM Build"
+description: "Builds a JavaScript project using PNPM and NX"
+author: "Jimmie Fulton <jimmie@ybor.ai>"
+
+# Define the inputs for this action
+inputs:
+  run-lint:
+    description: "Whether to run linting"
+    required: false
+    default: "true"
+  lint-args:
+    description: "Arguments for the lint command"
+    required: false
+    default: "--all --parallel=5"
+  build-args:
+    description: "Arguments for the build command"
+    required: false
+    default: "--all --parallel=5 --prod --exclude docs"
+  node-options:
+    description: "Node options for build process"
+    required: false
+    default: "--max_old_space_size=4096"
+  archive-coverage:
+    description: "Whether to archive code coverage results"
+    required: false
+    default: "false"
+  coverage-path:
+    description: "Path to the coverage reports"
+    required: false
+    default: "coverage"
+
+# Define the outputs for this action
+outputs:
+  affected-apps:
+    description: "List of affected applications"
+    value: ${{ steps.affected-apps.outputs.apps }}
+
+# Define the runs configuration
+runs:
+  using: "composite"
+  steps:
+    - name: Set Node Options
+      shell: bash
+      run: export NODE_OPTIONS="${{ inputs.node-options }}"
+
+    - name: Test / Lint
+      if: inputs.run-lint == 'true'
+      shell: bash
+      run: pnpm nx run-many --target=lint ${{ inputs.lint-args }}
+
+    - name: Archive code coverage results
+      if: inputs.archive-coverage == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: unit-tests-report
+        path: ${{ inputs.coverage-path }}
+
+    - name: Build
+      shell: bash
+      run: pnpm nx run-many --target=build ${{ inputs.build-args }}
+
+    - name: Get affected apps
+      id: affected-apps
+      shell: bash
+      run: |
+        APPS=$(pnpm nx show projects --type app --exclude docs | cut -d, -f1)
+        echo "apps=$APPS" >> $GITHUB_OUTPUT
+        echo "Affected applications: $APPS"
+
+# Define the branding for the action in the GitHub Marketplace
+branding:
+  icon: "box"
+  color: "blue"
