@@ -1,25 +1,58 @@
 name: "JavaScript PNPM Build"
-description: "Builds a JavaScript project using PNPM and NX"
+description: "Builds a JavaScript/TypeScript project using pnpm with flexible lint, test, and build commands"
 author: "Jimmie Fulton <jimmie@ybor.ai>"
 
 # Define the inputs for this action
 inputs:
+  # Lint configuration
   run-lint:
     description: "Whether to run linting"
     required: false
     default: "true"
+  lint-command:
+    description: "Command to run for linting"
+    required: false
+    default: "pnpm lint"
   lint-args:
-    description: "Arguments for the lint command"
+    description: "Additional arguments for the lint command"
     required: false
-    default: "--all --parallel=5"
+    default: ""
+
+  # Test configuration
+  run-test:
+    description: "Whether to run tests"
+    required: false
+    default: "true"
+  test-command:
+    description: "Command to run for testing"
+    required: false
+    default: "pnpm test"
+  test-args:
+    description: "Additional arguments for the test command"
+    required: false
+    default: ""
+  
+  # Build configuration
+  run-build:
+    description: "Whether to run build"
+    required: false
+    default: "true"
+  build-command:
+    description: "Command to run for building"
+    required: false
+    default: "pnpm build"
   build-args:
-    description: "Arguments for the build command"
+    description: "Additional arguments for the build command"
     required: false
-    default: "--all --parallel=5 --prod --exclude docs"
+    default: ""
+  
+  # General configuration
   node-options:
-    description: "Node options for build process"
+    description: "Node options for all processes"
     required: false
     default: "--max_old_space_size=4096"
+  
+  # Coverage configuration
   archive-coverage:
     description: "Whether to archive code coverage results"
     required: false
@@ -29,12 +62,6 @@ inputs:
     required: false
     default: "coverage"
 
-# Define the outputs for this action
-outputs:
-  affected-apps:
-    description: "List of affected applications"
-    value: ${{ steps.affected-apps.outputs.apps }}
-
 # Define the runs configuration
 runs:
   using: "composite"
@@ -43,31 +70,68 @@ runs:
       shell: bash
       run: export NODE_OPTIONS="${{ inputs.node-options }}"
 
-    - name: Test / Lint
+    - name: Lint
       if: inputs.run-lint == 'true'
       shell: bash
-      run: pnpm nx run-many --target=lint ${{ inputs.lint-args }}
+      run: |
+        echo "::group::Running Lint"
+        echo "Running command: ${{ inputs.lint-command }} ${{ inputs.lint-args }}"
+        ${{ inputs.lint-command }} ${{ inputs.lint-args }} || {
+          echo "::error::Linting failed. Please check the logs above for errors."
+          exit 1
+        }
+        echo "::endgroup::"
+
+    - name: Test
+      if: inputs.run-test == 'true'
+      shell: bash
+      run: |
+        echo "::group::Running Tests"
+        echo "Running command: ${{ inputs.test-command }} ${{ inputs.test-args }}"
+        ${{ inputs.test-command }} ${{ inputs.test-args }} || {
+          echo "::error::Tests failed. Please check the logs above for errors."
+          exit 1
+        }
+        echo "::endgroup::"
 
     - name: Archive code coverage results
-      if: inputs.archive-coverage == 'true'
+      if: inputs.archive-coverage == 'true' && inputs.run-test == 'true'
       uses: actions/upload-artifact@v4
       with:
-        name: unit-tests-report
+        name: test-coverage-report
         path: ${{ inputs.coverage-path }}
 
     - name: Build
-      shell: bash
-      run: pnpm nx run-many --target=build ${{ inputs.build-args }}
-
-    - name: Get affected apps
-      id: affected-apps
+      if: inputs.run-build == 'true'
       shell: bash
       run: |
-        APPS=$(pnpm nx show projects --type app --exclude docs | cut -d, -f1)
-        echo "apps=$APPS" >> $GITHUB_OUTPUT
-        echo "Affected applications: $APPS"
+        echo "::group::Running Build"
+        echo "Running command: ${{ inputs.build-command }} ${{ inputs.build-args }}"
+        ${{ inputs.build-command }} ${{ inputs.build-args }} || {
+          echo "::error::Build failed. Please check the logs above for errors."
+          exit 1
+        }
+        echo "::endgroup::"
+
+    - name: List Built Applications
+      if: inputs.run-build == 'true'
+      id: built-apps
+      shell: bash
+      run: |
+        # This is a simple placeholder to list applications
+        # In real usage, you might need to adapt this to your project structure
+        echo "::group::Built Applications"
+        if command -v pnpm &> /dev/null && [ -f "package.json" ]; then
+          echo "pnpm project with package.json found"
+          if grep -q '"workspaces"' package.json; then
+            echo "Workspace project detected"
+            WORKSPACES=$(node -e "console.log(JSON.stringify(require('./package.json').workspaces || []))" | jq -r '.[]')
+            echo "Workspaces: $WORKSPACES"
+          fi
+        fi
+        echo "::endgroup::"
 
 # Define the branding for the action in the GitHub Marketplace
 branding:
-  icon: "box"
+  icon: "package"
   color: "blue"
