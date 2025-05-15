@@ -31,7 +31,7 @@ inputs:
     description: "Additional arguments for the test command"
     required: false
     default: ""
-  
+
   # Build configuration
   run-build:
     description: "Whether to run build"
@@ -45,13 +45,13 @@ inputs:
     description: "Additional arguments for the build command"
     required: false
     default: ""
-  
+
   # General configuration
   node-options:
     description: "Node options for all processes"
     required: false
     default: "--max_old_space_size=4096"
-  
+
   # Coverage configuration
   archive-coverage:
     description: "Whether to archive code coverage results"
@@ -76,10 +76,16 @@ runs:
       run: |
         echo "::group::Running Lint"
         echo "Running command: ${{ inputs.lint-command }} ${{ inputs.lint-args }}"
-        ${{ inputs.lint-command }} ${{ inputs.lint-args }} || {
-          echo "::error::Linting failed. Please check the logs above for errors."
-          exit 1
-        }
+        
+        # Check if the lint script exists in package.json
+        if grep -q "\"lint\":" package.json; then
+          ${{ inputs.lint-command }} ${{ inputs.lint-args }} || {
+            echo "::error::Linting failed. Please check the logs above for errors."
+            exit 1
+          }
+        else
+          echo "No lint script found in package.json. Skipping linting."
+        fi
         echo "::endgroup::"
 
     - name: Test
@@ -88,10 +94,16 @@ runs:
       run: |
         echo "::group::Running Tests"
         echo "Running command: ${{ inputs.test-command }} ${{ inputs.test-args }}"
-        ${{ inputs.test-command }} ${{ inputs.test-args }} || {
-          echo "::error::Tests failed. Please check the logs above for errors."
-          exit 1
-        }
+        
+        # Check if the test script exists in package.json
+        if grep -q "\"test\":" package.json; then
+          ${{ inputs.test-command }} ${{ inputs.test-args }} || {
+            echo "::error::Tests failed. Please check the logs above for errors."
+            exit 1
+          }
+        else
+          echo "No test script found in package.json. Skipping tests."
+        fi
         echo "::endgroup::"
 
     - name: Archive code coverage results
@@ -107,14 +119,20 @@ runs:
       run: |
         echo "::group::Running Build"
         echo "Running command: ${{ inputs.build-command }} ${{ inputs.build-args }}"
-        ${{ inputs.build-command }} ${{ inputs.build-args }} || {
-          echo "::error::Build failed. Please check the logs above for errors."
-          exit 1
-        }
+        
+        # Check if the build script exists in package.json
+        if grep -q "\"build\":" package.json; then
+          ${{ inputs.build-command }} ${{ inputs.build-args }} || {
+            echo "::error::Build failed. Please check the logs above for errors."
+            exit 1
+          }
+        else
+          echo "No build script found in package.json. Skipping build."
+        fi
         echo "::endgroup::"
 
     - name: List Built Applications
-      if: inputs.run-build == 'true'
+      if: inputs.run-build == 'true' && success()
       id: built-apps
       shell: bash
       run: |

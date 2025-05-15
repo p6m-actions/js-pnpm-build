@@ -15,6 +15,7 @@ This action is designed to work in conjunction with the [JavaScript PNPM Setup](
 - **Toggleable Steps**: Enable or disable linting, testing, and building steps as needed
 - **Clear Error Reporting**: Each step provides clear feedback about failures
 - **Coverage Reports**: Option to archive test coverage reports
+- **Script Detection**: Automatically skips steps when corresponding scripts aren't defined in package.json
 
 ## Usage
 
@@ -24,7 +25,7 @@ Basic usage with default settings:
 - name: Setup PNPM
   uses: p6m-actions/js-pnpm-setup@v1
   with:
-    node-version: '18'
+    node-version: '20'
     install-dependencies: 'true'
 
 - name: Build
@@ -169,3 +170,46 @@ jobs:
 2. **Out of memory errors**: If you encounter memory issues during build, increase the memory allocation with the node-options input.
 
 3. **pnpm workspace issues**: For monorepo projects using pnpm workspaces, you may need to use commands like `pnpm -r` to run commands recursively in all packages.
+```yaml
+- name: Build Vue.js Project
+  uses: p6m-actions/js-pnpm-build@v1
+  with:
+    lint-command: 'pnpm lint:vue'
+    test-command: 'pnpm test:unit'
+    build-command: 'pnpm build:prod'
+```
+
+### Next.js Project Example
+
+```yaml
+- name: Build Next.js Project
+  uses: p6m-actions/js-pnpm-build@v1
+  with:
+    lint-command: 'pnpm lint'
+    test-command: 'pnpm test:ci'
+    build-command: 'pnpm build'
+    node-options: '--max_old_space_size=8192' # Next.js may need more memory
+```
+
+### Workspace Project Example
+
+```yaml
+- name: Build Workspace Project
+  uses: p6m-actions/js-pnpm-build@v1
+  with:
+    lint-command: 'pnpm -r lint'
+    test-command: 'pnpm -r test'
+    build-command: 'pnpm -r build'
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Command not found errors**: The action will automatically check if the required scripts exist in package.json and skip steps that don't have corresponding scripts. If you're using custom commands, make sure they're properly defined in your package.json.
+
+2. **Out of memory errors**: If you encounter memory issues during build, increase the memory allocation with the node-options input.
+
+3. **pnpm workspace issues**: For monorepo projects using pnpm workspaces, you may need to use commands like `pnpm -r` to run commands recursively in all packages.
+
+4. **Custom script names**: If your project uses different script names (e.g., `eslint` instead of `lint`), use the custom command inputs to specify the correct command (e.g., `lint-command: 'pnpm eslint'`).
