@@ -47,6 +47,10 @@ inputs:
     default: ""
 
   # General configuration
+  project-path:
+    description: "Path to the project directory containing package.json"
+    required: false
+    default: "."
   node-options:
     description: "Node options for all processes"
     required: false
@@ -73,10 +77,11 @@ runs:
     - name: Lint
       if: inputs.run-lint == 'true'
       shell: bash
+      working-directory: ${{ inputs.project-path }}
       run: |
         echo "::group::Running Lint"
         echo "Running command: ${{ inputs.lint-command }} ${{ inputs.lint-args }}"
-        
+
         # Check if the lint script exists in package.json
         if grep -q "\"lint\":" package.json; then
           ${{ inputs.lint-command }} ${{ inputs.lint-args }} || {
@@ -91,10 +96,11 @@ runs:
     - name: Test
       if: inputs.run-test == 'true'
       shell: bash
+      working-directory: ${{ inputs.project-path }}
       run: |
         echo "::group::Running Tests"
         echo "Running command: ${{ inputs.test-command }} ${{ inputs.test-args }}"
-        
+
         # Check if the test script exists in package.json
         if grep -q "\"test\":" package.json; then
           ${{ inputs.test-command }} ${{ inputs.test-args }} || {
@@ -111,15 +117,16 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: test-coverage-report
-        path: ${{ inputs.coverage-path }}
+        path: ${{ inputs.project-path }}/${{ inputs.coverage-path }}
 
     - name: Build
       if: inputs.run-build == 'true'
       shell: bash
+      working-directory: ${{ inputs.project-path }}
       run: |
         echo "::group::Running Build"
         echo "Running command: ${{ inputs.build-command }} ${{ inputs.build-args }}"
-        
+
         # Check if the build script exists in package.json
         if grep -q "\"build\":" package.json; then
           ${{ inputs.build-command }} ${{ inputs.build-args }} || {
@@ -135,6 +142,7 @@ runs:
       if: inputs.run-build == 'true' && success()
       id: built-apps
       shell: bash
+      working-directory: ${{ inputs.project-path }}
       run: |
         # This is a simple placeholder to list applications
         # In real usage, you might need to adapt this to your project structure

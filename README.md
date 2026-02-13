@@ -85,9 +85,10 @@ Customized usage with specific commands:
 
 | Name | Description | Default | Required |
 |------|-------------|---------|----------|
+| `project-path` | Path to the project directory containing package.json | `.` | No |
 | `node-options` | Node options for all processes | `--max_old_space_size=4096` | No |
 | `archive-coverage` | Whether to archive code coverage results | `false` | No |
-| `coverage-path` | Path to the coverage reports | `coverage` | No |
+| `coverage-path` | Path to the coverage reports (relative to project-path) | `coverage` | No |
 
 ## Examples
 
@@ -123,8 +124,52 @@ jobs:
   uses: p6m-actions/js-pnpm-build@v1
   with:
     run-lint: 'true'
-    run-test: 'false' 
+    run-test: 'false'
     run-build: 'false'
+```
+
+### Project in a Subdirectory
+
+For repositories where the project is not at the root:
+
+```yaml
+- name: Setup PNPM
+  uses: p6m-actions/js-pnpm-setup@v1
+  with:
+    project-path: 'packages/my-app'
+
+- name: Build
+  uses: p6m-actions/js-pnpm-build@v1
+  with:
+    project-path: 'packages/my-app'
+```
+
+### Multiple Projects in One Repository
+
+For monorepos with multiple independent projects:
+
+```yaml
+# Build frontend
+- name: Setup Frontend
+  uses: p6m-actions/js-pnpm-setup@v1
+  with:
+    project-path: 'packages/frontend'
+
+- name: Build Frontend
+  uses: p6m-actions/js-pnpm-build@v1
+  with:
+    project-path: 'packages/frontend'
+
+# Build backend
+- name: Setup Backend
+  uses: p6m-actions/js-pnpm-setup@v1
+  with:
+    project-path: 'packages/backend'
+
+- name: Build Backend
+  uses: p6m-actions/js-pnpm-build@v1
+  with:
+    project-path: 'packages/backend'
 ```
 
 ### Vue.js Project Example
