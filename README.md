@@ -85,7 +85,7 @@ Customized usage with specific commands:
 
 | Name | Description | Default | Required |
 |------|-------------|---------|----------|
-| `project-path` | Path to the project directory containing package.json | `.` | No |
+| `project-path` | Relative path to the project directory (must contain `package.json`) | `.` | No |
 | `node-options` | Node options for all processes | `--max_old_space_size=4096` | No |
 | `archive-coverage` | Whether to archive code coverage results | `false` | No |
 | `coverage-path` | Path to the coverage reports (relative to project-path) | `coverage` | No |
@@ -130,7 +130,7 @@ jobs:
 
 ### Project in a Subdirectory
 
-For repositories where the project is not at the root:
+For repositories where the project is not at the root. The `project-path` must be a relative path within the repository containing `package.json`:
 
 ```yaml
 - name: Setup PNPM
@@ -146,7 +146,9 @@ For repositories where the project is not at the root:
 
 ### Multiple Projects in One Repository
 
-For monorepos with multiple independent projects:
+For repositories with multiple independent PNPM projects (not pnpm workspaces using `pnpm-workspace.yaml`):
+
+> **Note:** This feature is designed for repositories containing multiple separate PNPM projects. For pnpm workspaces, run commands from the workspace root using `pnpm -r` instead (see Workspace Project Example below).
 
 ```yaml
 # Build frontend
@@ -211,47 +213,6 @@ For monorepos with multiple independent projects:
 ### Common Issues
 
 1. **Command not found errors**: Make sure your package.json includes the scripts defined in your lint-command, test-command, and build-command inputs.
-
-2. **Out of memory errors**: If you encounter memory issues during build, increase the memory allocation with the node-options input.
-
-3. **pnpm workspace issues**: For monorepo projects using pnpm workspaces, you may need to use commands like `pnpm -r` to run commands recursively in all packages.
-```yaml
-- name: Build Vue.js Project
-  uses: p6m-actions/js-pnpm-build@v1
-  with:
-    lint-command: 'pnpm lint:vue'
-    test-command: 'pnpm test:unit'
-    build-command: 'pnpm build:prod'
-```
-
-### Next.js Project Example
-
-```yaml
-- name: Build Next.js Project
-  uses: p6m-actions/js-pnpm-build@v1
-  with:
-    lint-command: 'pnpm lint'
-    test-command: 'pnpm test:ci'
-    build-command: 'pnpm build'
-    node-options: '--max_old_space_size=8192' # Next.js may need more memory
-```
-
-### Workspace Project Example
-
-```yaml
-- name: Build Workspace Project
-  uses: p6m-actions/js-pnpm-build@v1
-  with:
-    lint-command: 'pnpm -r lint'
-    test-command: 'pnpm -r test'
-    build-command: 'pnpm -r build'
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Command not found errors**: The action will automatically check if the required scripts exist in package.json and skip steps that don't have corresponding scripts. If you're using custom commands, make sure they're properly defined in your package.json.
 
 2. **Out of memory errors**: If you encounter memory issues during build, increase the memory allocation with the node-options input.
 

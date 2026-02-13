@@ -48,7 +48,7 @@ inputs:
 
   # General configuration
   project-path:
-    description: "Path to the project directory containing package.json"
+    description: "Relative path to the project directory containing package.json (must not contain '..' or be absolute)"
     required: false
     default: "."
   node-options:
